@@ -1,0 +1,6 @@
+D:\my_webroot\caf\web家园最新\codecraft_startwar\GameCore\Toolchains\RecTiles\RecTiles\bin\Debug\RecTiles.exe.config
+D:\my_webroot\caf\web家园最新\codecraft_startwar\GameCore\Toolchains\RecTiles\RecTiles\bin\Debug\RecTiles.exe
+D:\my_webroot\caf\web家园最新\codecraft_startwar\GameCore\Toolchains\RecTiles\RecTiles\bin\Debug\RecTiles.pdb
+D:\my_webroot\caf\web家园最新\codecraft_startwar\GameCore\Toolchains\RecTiles\RecTiles\obj\Debug\RecTiles.csprojResolveAssemblyReference.cache
+D:\my_webroot\caf\web家园最新\codecraft_startwar\GameCore\Toolchains\RecTiles\RecTiles\obj\Debug\RecTiles.exe
+D:\my_webroot\caf\web家园最新\codecraft_startwar\GameCore\Toolchains\RecTiles\RecTiles\obj\Debug\RecTiles.pdb

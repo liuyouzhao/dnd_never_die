@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Cocos2d-html5 Hello World test</title>
+	<link rel="icon"
+	      type="image/GIF"
+	      href="../tests/Resources/Images/favicon.ico"/>
+
+</head>
+<body style="padding:0; margin: 0; background: #000;">
+<div style="text-align: center; font-size: 0">
+	<canvas id="gameCanvas" width="800" height="450"></canvas>
+</div>
+</body>
+</html>
+<script src='./ThirdParty/cocos2d-html5-alpha-canvasmenu-min.js'>
+</script>
+<script>
+var cc = cc = cc || {};
+//Cocos2d directory
+cc.Dir = './';//in relate to the html file or use absolute
+cc.loadQue = [];//the load que which js files are loaded
+cc.COCOS2D_DEBUG = 2;
+cc._DEBUG = 1;
+cc._IS_RETINA_DISPLAY_SUPPORTED = 0;
+cc.LOG = function(msg){
+    console.log(msg);
+}
+
+
+//html5 selector method
+cc.$ = function (x) {
+    return document.querySelector(x);
+};
+cc.$new = function (x) {
+    return document.createElement(x);
+};
+//function to load files into html
+/*
+ cc.loadjs = function(filename)
+ {
+ //get a ref to header
+ var head = cc.$('head');
+ var insert = document.createElement('script');
+ insert.setAttribute('src',cc.Dir+filename);
+ head.appendChild(insert);
+ };*/
+var layer;
+
+cc.loadjs = function (filename) {
+    //add the file to the que
+    var script = cc.$new('script');
+    script.src = cc.Dir + filename;
+    script.order = cc.loadQue.length;
+    cc.loadQue.push(script);
+
+
+    script.onload = function () {
+        cc.setup("gameCanvas");
+        //we are ready to run the game
+        cc.Loader.shareLoader().onloading = function () {
+            cc.LoaderScene.shareLoaderScene().draw();
+        };
+        cc.Loader.shareLoader().onload = function () {
+            cc.AppController.shareAppController().didFinishLaunchingWithOptions();
+        };
+        //preload ressources
+        cc.Loader.shareLoader().preload([
+            {type:"tmx", src:"Data/Maps/map001.tmx"}
+        ]);
+    };
+    if (script.order === 0)//if the first file to load, then we put it on the head
+    {
+        cc.$('head').appendChild(script);
+    }
+};
+
+
+cc.loadjs('AppDelegate.js');
+
+// Engine files,
+// They can be packeted to a single file using the Ant tool.
+// The shell files and Closure Compiler which Ant needs are provided in tools folder and cocos2d folder.
+
+</script>

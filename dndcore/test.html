@@ -1,0 +1,464 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>控制台游戏</title>
+<link type="text/css" rel="stylesheet" href="console.css" />
+</head>
+<body  style="padding:0; margin: 0; background: #CCCCCC;">
+	<canvas id="cag" onmousedown="pick(event)" onmousemove="move(event)"></canvas>
+	<div id="c1" style="margin:20px;"></div>
+</body>
+<script>
+String.prototype.replaceAll = function(){
+	return this.replace(/[A-Z]+$/ig, "");
+	//var curStr = this;
+	//while(curStr.match(reallyDo)){
+	//	curStr = curStr.replace(reallyDo, replaceWith);
+	//}
+	//return curStr;
+};
+function clone(myObj){
+	if(typeof(myObj) != 'object') return myObj;
+	if(myObj === null) return myObj;
+	var myNewObj = {};
+	for(var i in myObj){
+		myNewObj[i] = clone(myObj[i]);
+	}
+	return myNewObj;
+}
+</script>
+<script type="text/javascript" src="./Globel.js"></script>
+<!-- 第三方工具 -->
+<script type="text/javascript" src="./ThirdParty/cake.js"></script>
+<script type="text/javascript" src="./ThirdParty/console.js"></script>
+
+<!-- Unit 文件夹 -->
+<script type="text/javascript" src="./Unit/Base.js"></script>
+<script type="text/javascript" src="./Unit/BuffDeBuff.js"></script>
+<script type="text/javascript" src="./Unit/Attributes.js"></script>
+<script type="text/javascript" src="./Unit/Unit.js"></script>
+<script type="text/javascript" src="./Unit/Dot.js"></script>
+
+<!-- Skill 文件夹 -->
+<script type="text/javascript" src="./Skill/Skill.js"></script>
+
+<!-- Static 文件夹 -->
+<script type="text/javascript" src="./Static/BuffDeBuffList.js"></script>
+<script type="text/javascript" src="./Static/SkillList.js"></script>
+<script type="text/javascript" src="./Static/DotsList.js"></script>
+
+<!-- PlayState 文件夹 -->
+<script type="text/javascript" src="./PlayState/Action.js"></script>
+<script type="text/javascript" src="./PlayState/ActionJudger.js"></script>
+<script type="text/javascript" src="./PlayState/ActionProcess.js"></script>
+
+<!-- Map 文件夹 -->
+<script type="text/javascript" src="./Map/Tile.js"></script>
+<script type="text/javascript" src="./Map/TileGrid.js"></script>
+<script type="text/javascript" src="./Map/UnitOnTile.js"></script>
+<script type="text/javascript" src="./Map/TileUnitList.js"></script>
+
+<!-- World 文件夹 -->
+<script type="text/javascript" src="./World/UnitsList.js"></script>
+<script type="text/javascript" src="./World/UnitSequence.js"></script>
+<script type="text/javascript" src="./World/BuffSequece.js"></script>
+<script type="text/javascript" src="./World/DotSequence.js"></script>
+<script type="text/javascript" src="./World/Arbitrament.js"></script>
+
+<!-- JsonData文件夹 静态数据 -->
+<script type="text/javascript" src="./JsonData/JsonUnits.js"></script>
+<script type="text/javascript" src="./JsonData/JsonSkills.js"></script>
+<script type="text/javascript" src="./JsonData/JsonBuffDeBuffs.js"></script>
+<script type="text/javascript" src="./JsonData/JsonDots.js"></script>
+<script type="text/javascript" src="./JsonData/JsonMapUnits.js"></script>
+<script type="text/javascript" src="./JsonData/JsonUnitTileInfo.js"></script>
+
+<script>
+/// 先初始化控制台:
+initConsole("c1");
+var global_ctx = null;
+var global_grid = null;
+/// 先给定两个单位
+/*var role1 = new Unit(new UnitAttributes(GANDOF_ATTRIBUTE));
+var role2 = new Unit(new UnitAttributes(DENBLIDO_ATTRIBUTE));
+var n1 = role1.attributes.getAttribute("名字");
+var n2 = role2.attributes.getAttribute("名字");
+_UnitsList.list[n1] = role1;
+_UnitsList.list[n2] = role2;*/
+/// 初始化网格单元
+
+function cb(unit, val){
+	function timer(x, y, yto, val){
+		return function(){
+			global_ctx.save();
+			var head = "";
+			if(typeof val != "string" && val > 0){
+				head = "+"
+				global_ctx.fillStyle = "green";
+			}
+			else
+				global_ctx.fillStyle = "red";
+
+			global_ctx.fillText(head + val, x, y);
+			global_ctx.restore();
+			if(y < yto){
+				window.setTimeout(timer(x, y - 5, yto, val), 100);
+			}
+		}
+	}
+	var tile = global_grid.getTileAt(unit.x, unit.y);
+	var bx = tile.center_x;
+	var by = tile.center_y;
+	window.setTimeout(timer(bx, by, by - 30, val), 100);
+	
+}
+_UnitsList.load(mapunits001, cb);
+
+var group_colors = [
+	"red",
+	"blue",
+	"green",
+	"yellow"
+];
+
+
+
+/// 初始化技能列表
+var skilllist = [normal_near_attack, test_skill001, test_skill002, test_skill003, test_skill004, test_skill005, angry, glass_wall, heal, heal_dot];
+
+_SkillList.load(skilllist);
+
+/// 初始化增益削弱表
+var bufflist = [debuff001, buff001, buff002, buff003];
+_BuffDeBuffList.load(bufflist);
+
+
+/// 初始化续跳表
+var dotlist = [burning, healing];
+_DotsList.load(dotlist);
+_UnitSequence.start();
+console.log("游戏开始...");
+
+/// 进行随机互相干！
+
+function randAct(){
+	var n1 = parseInt(Math.random()*10);
+	var n2 = parseInt(Math.random()*10);
+	var rand_skill1 = skilllist[n1];
+	var rand_skill2 = skilllist[n2];
+	var s1 = rand_skill1["技能名"];
+	var s2 = rand_skill2["技能名"];
+	var t1 = role2.attributes.getAttribute("名字");
+	var t2 = role1.attributes.getAttribute("名字");
+	if(rand_skill1 == heal || rand_skill1 == angry || rand_skill1 == glass_wall || rand_skill1 == heal_dot)
+		t1 = role1.attributes.getAttribute("名字");
+
+	if(rand_skill2 == heal || rand_skill2 == angry || rand_skill2 == glass_wall || rand_skill2 == heal_dot)
+		t2 = role2.attributes.getAttribute("名字");
+	role1.attributes.setAttribute("目标", t1);
+	role2.attributes.setAttribute("目标", t2);
+
+	role1.pushAction(new Action({
+		"owner":role1.attributes.getAttribute("名字"),
+		"target":role1.attributes.getAttribute("目标"),
+		"skill":s1,
+		"time":_SkillList.skill_list[s1].data["耗时"]
+	}));
+
+	role2.pushAction(new Action({
+		"owner":role2.attributes.getAttribute("名字"),
+		"target":role2.attributes.getAttribute("目标"),
+		"skill":s2,
+		"time":_SkillList.skill_list[s2].data["耗时"]
+	}));
+
+}
+function doAct(owner, target){
+	if(owner != target){
+		var n1 = parseInt(Math.random()*6);
+		var rand_skill1 = skilllist[n1];
+		var s1 = rand_skill1["技能名"];
+		var in_owner = owner.in_unit;
+		in_owner.attributes.setAttribute("目标", target);
+		in_owner.pushAction(new Action({
+			"owner":owner.name,
+			"target":target.name,
+			"skill":s1,
+			"time":_SkillList.skill_list[s1].data["耗时"]
+		}));
+	}
+
+	else{
+		var n1 = parseInt(Math.random()*4 + 6);
+		var rand_skill1 = skilllist[n1];
+		var s1 = rand_skill1["技能名"];
+		var in_owner = owner.in_unit;
+		in_owner.attributes.setAttribute("目标", target);
+		in_owner.pushAction(new Action({
+			"owner":owner.name,
+			"target":target.name,
+			"skill":s1,
+			"time":_SkillList.skill_list[s1].data["耗时"]
+		}));
+
+	}
+
+
+
+	
+
+}
+
+</script>
+
+
+
+<!-- 
+和地图有关的js，是游戏世界的整体数据结构
+是游戏中剧情、单位战斗等统一的关系表达
+-->
+<script type="text/javascript">
+/// 初始化canvas
+//var ca = document.getElementById("ca");
+var cag = document.getElementById("cag");
+function resizeCanvas(){
+	var width = document.body.clientWidth - 10;
+	//ca.width = width;
+	//ca.height = 500;
+	cag.width = width;
+	cag.height = 480;
+}
+resizeCanvas();
+window.onresize = resizeCanvas;
+var ctx = cag.getContext("2d");
+var panel_left = 600;
+var rowheight = 12;
+var left = 10;
+var right = 440;
+
+function drawLifeBar(ctx, x, y, value, lifemax){
+	var rh = rowheight/2;
+	ctx.save();
+	ctx.fillStyle = "black";
+	ctx.fillRect(x, y - rh - 2, lifemax + 2, rh + 2);
+	ctx.fillStyle = "green";
+	ctx.fillRect(x + 1, y - rh - 1, value, rh);
+	ctx.fillStyle = "white";
+	ctx.fillRect(x + 1 + value, y - rh - 1, lifemax - value, rh);
+	ctx.restore();
+}
+
+function showAttr(){
+	ctx.clearRect(panel_left, 0, cag.width, cag.height);
+	var index = 0;
+	var x = left;
+	x += panel_left;
+	if(cur_unit == null)
+		return;
+	var r1 = cur_unit.in_unit;
+	if(r1 && r1.attributes){
+		var json1 = r1.attributes.data;
+		var y = 20;
+		for(var key in json1){
+			var attr_val =  r1.attributes.getAttribute(key);
+			var attr_val_ori =  r1.attributes.getOriginalAttri(key);
+			var ischanged = _mhgame_left_right_compare(attr_val_ori, attr_val);
+			if(key == "生命值"){
+				ctx.fillText(key + ":", x, y);
+				attr_val = attr_val < 0 ? 0 : attr_val;
+				var lifemax =  r1.attributes.getOriginalAttri(key+"上限");
+				drawLifeBar(ctx, x + 45, y, attr_val, lifemax);
+			}
+			else{
+				ctx.save();
+				ctx.fillStyle = ischanged == -1 ? "red" : (ischanged == 1 ? "green" : "black");
+				ctx.fillText(key + ":" + attr_val, x, y);
+				ctx.restore();
+			}
+			y += rowheight;
+		}
+	}
+}
+
+/// 初始化一张虚拟地图网格
+var gw = 12, gh = 14, tr = 36;
+var tilegrid = new TileGrid(gw, gh, tr);
+global_grid = tilegrid;
+/// 缓冲
+var buffer = document.createElement("canvas");
+buffer.width = cag.width;
+buffer.height = cag.height;
+var bufferCtx = buffer.getContext("2d");
+
+var ctxg = cag.getContext("2d");
+global_ctx = cag.getContext("2d");
+
+var selTile = null;
+var oldTile = null;
+/// 偏移量
+var offsetx = 0;
+var offsety = 0;
+//var offsety = -tr * Tile.g3 * 0.5;
+var mousex = 0, mousey = 0;
+var cur_unit = null;
+/// 点击拾取
+function pick(ev){
+	var px = ev.clientX - cag.offsetLeft;
+	var py = ev.clientY - cag.offsetTop;
+	var tile = tilegrid.pickTile(px - offsetx, py - offsety);
+	if(tile == null)
+		return;
+	var unit = _UnitsList.getUnitByPosition(tile.index_x, tile.index_y);
+	/// 移动
+	if(cur_unit != null && unit == null){
+		cur_unit.moveTo(tile.index_x, tile.index_y);
+		cur_unit = null;
+	}
+	/// 行动
+	else if(cur_unit != null && unit != null){
+		doAct(cur_unit, unit);
+		cur_unit = null;
+	}
+	else{
+		cur_unit = unit;
+	}
+}
+
+
+
+function move(ev){
+	var px = ev.clientX - cag.offsetLeft;
+	var py = ev.clientY - cag.offsetTop;
+	mousex = px;
+	mousey = py;
+	var tile = tilegrid.pickTile(px-offsetx, py-offsety);
+	selTile = tile;
+	if(selTile !== null){
+		oldTile = selTile;
+	}
+}
+
+
+
+
+function selTilePaint(tile, curCtx){
+	curCtx.save();
+	curCtx.translate(offsetx, offsety);
+	curCtx.lineWidth = 5;
+	curCtx.strokeStyle = "#999900";
+	strokeTile(tile, curCtx);
+	curCtx.restore();
+}
+
+
+
+function fillTile(tile, curCtx){
+	var points = tile.points;
+	var p0 = points[0];
+	curCtx.save();
+	curCtx.moveTo(p0.x, p0.y);
+	for(var i = 1, len = points.length; i < len; i++){
+		var p = points[i];
+		curCtx.lineTo(p.x, p.y);
+	}
+	curCtx.lineTo(p0.x, p0.y);
+	curCtx.fill();
+	curCtx.restore();
+}
+
+
+
+function strokeTile(tile, curCtx){
+	var points = tile.points;
+	var p0 = points[0];
+	curCtx.save();
+	curCtx.beginPath();
+	curCtx.moveTo(p0.x, p0.y);
+	for(var i = 1, len = points.length; i < len; i++){
+		var p = points[i];
+		curCtx.lineTo(p.x, p.y);
+	}
+	curCtx.lineTo(p0.x, p0.y);
+	curCtx.stroke();
+	curCtx.restore();
+}
+
+
+
+function strokeHarfTile(tile, curCtx){
+	curCtx.save();
+	curCtx.moveTo(tile.points[5].x, tile.points[5].y);
+	curCtx.lineTo(tile.points[0].x, tile.points[0].y);
+	curCtx.lineTo(tile.points[1].x, tile.points[1].y);
+	curCtx.lineTo(tile.points[2].x, tile.points[2].y);
+	curCtx.stroke();
+	curCtx.restore();
+}
+
+
+
+function drawGrid(){
+	bufferCtx.save();
+	for(var i = 0; i < tilegrid.height; i++){
+		for(var j = 0; j < tilegrid.width; j++){
+			var tile = tilegrid.getTileAt(j, i);
+			strokeHarfTile(tile, bufferCtx);
+			bufferCtx.fillText(tile.index_x + "," + tile.index_y, tile.center_x, tile.center_y);
+		}
+	}
+	bufferCtx.restore();
+}
+
+drawGrid();
+
+function drawMap(){
+	ctxg.save();
+	ctxg.clearRect(0, 0, cag.width, cag.height);
+	ctxg.drawImage(buffer, offsetx, offsety);
+	if(oldTile != null){
+		selTilePaint(oldTile, ctxg);
+	}
+
+	for (var i = 0; i < _UnitsList.out_list.length; i++) {
+		var unit = _UnitsList.out_list[i];
+		var tile = tilegrid.getTileAt(unit.x, unit.y);
+		ctxg.save();
+		ctxg.fillStyle = group_colors[unit.group];
+		ctxg.fillRect(tile.center_x-tile.radio*0.5, tile.center_y-tile.radio*0.5, tile.radio, tile.radio);
+		ctxg.fillStyle = "black";
+		ctxg.fillText(unit.name, tile.center_x-tile.radio*0.5, tile.center_y);
+		ctxg.restore();
+	
+		var y = 0;
+		for (var key in unittileinfo001["属性"]) {
+			ctxg.save();
+			var attrname = key;
+			var color = unittileinfo001["属性"][key];
+			ctxg.strokeRect(tile.center_x-tile.radio*0.5, tile.center_y-tile.radio*0.5 + y, 
+				unit.getAttribute(attrname+"上限")/6, 4);
+			ctxg.fillStyle = color;
+			ctxg.fillRect(tile.center_x-tile.radio*0.5, tile.center_y-tile.radio*0.5 + y, 
+				unit.getAttribute(attrname)/6, 4);
+			y += 6;
+			ctxg.restore();
+		};
+
+		
+if(cur_unit == unit){
+			ctxg.save();
+			ctxg.lineWidth = 5;
+			ctxg.strokeStyle = "red";
+			strokeTile(tile, ctxg);
+			ctxg.restore();
+		}
+	};
+	ctxg.fillText("[" + mousex + ", " + mousey + "]", 0, 20);
+	ctxg.restore();
+	showAttr();
+}
+//window.setInterval(showAttr, 60);
+
+window.setInterval(drawMap,  100);
+</script>
+</html>
